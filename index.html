@@ -21,8 +21,7 @@
             margin: 0;
             padding: 20px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: center;
         }
 
         h1, h2, h3 {
@@ -31,15 +30,28 @@
             margin-top: 0;
         }
 
-        h1 { color: var(--accent-orange); }
-        h2 { color: var(--accent-orange); font-size: 1.3em;}
+        h1 { color: var(--accent-orange); font-size: 1.4em; }
+        h2 { color: var(--accent-orange); font-size: 1.3em; }
 
-        .container {
+        /* Structure globale en 2 colonnes */
+        .main-layout {
+            display: flex;
+            gap: 20px;
             width: 100%;
-            max-width: 700px;
+            max-width: 1200px;
+        }
+
+        .column-left {
+            flex: 1;
             display: flex;
             flex-direction: column;
             gap: 20px;
+        }
+
+        .column-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         .panel {
@@ -55,21 +67,21 @@
             background-color: #1f1f2a;
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 12px;
+            margin-bottom: 12px;
         }
 
         .player-name-input {
             background: transparent;
             border: none;
             color: var(--accent-orange);
-            font-size: 1.2em;
+            font-size: 1.1em;
             font-weight: bold;
             text-transform: uppercase;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             width: 100%;
             border-bottom: 1px dashed var(--border-color);
-            padding-bottom: 5px;
+            padding-bottom: 4px;
         }
         
         .player-name-input:focus {
@@ -80,9 +92,9 @@
         .mech-row {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-            padding: 8px;
+            gap: 8px;
+            margin-bottom: 6px;
+            padding: 6px;
             background-color: #2a2a35;
             border-radius: 4px;
             border: 1px solid transparent;
@@ -98,16 +110,16 @@
             background-color: #12121a;
             color: white;
             border: 1px solid var(--border-color);
-            padding: 6px;
+            padding: 5px;
             border-radius: 4px;
             flex-grow: 1;
-            font-size: 0.9em;
+            font-size: 0.85em;
         }
 
         .mech-skill-display {
-            font-size: 0.9em;
+            font-size: 0.85em;
             color: #b0b0c0;
-            width: 60px;
+            width: 55px;
             text-align: center;
         }
 
@@ -116,8 +128,8 @@
             background-color: var(--border-color);
             color: var(--text-main);
             border: none;
-            padding: 8px 12px;
-            font-size: 0.9em;
+            padding: 6px 10px;
+            font-size: 0.85em;
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.2s;
@@ -134,7 +146,7 @@
             background-color: var(--accent-green);
             color: white;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 15px;
             padding: 12px;
             font-size: 1em;
         }
@@ -146,6 +158,7 @@
             color: #b0b0c0;
             width: 100%;
             margin-top: 5px;
+            padding: 8px;
         }
         button.add-btn:hover {
             border-color: var(--accent-orange);
@@ -161,18 +174,19 @@
             border-left: 4px solid var(--accent-green);
             margin-bottom: 20px;
             font-weight: bold;
+            font-size: 0.95em;
         }
 
         .form-group {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            padding: 5px 0;
+            margin-bottom: 12px;
+            padding: 6px 0;
             border-bottom: 1px dashed #3f3f50;
         }
 
-        label { font-weight: bold; flex-grow: 1; }
+        label { font-weight: bold; flex-grow: 1; font-size: 0.95em; }
 
         select, input[type="number"] {
             background-color: #12121a;
@@ -180,8 +194,8 @@
             border: 1px solid var(--border-color);
             padding: 8px;
             border-radius: 4px;
-            width: 200px;
-            font-size: 1em;
+            width: 180px;
+            font-size: 0.95em;
         }
 
         .result-box {
@@ -194,134 +208,143 @@
         }
 
         .result-number {
-            font-size: 3em;
+            font-size: 3.5em;
             font-weight: bold;
             color: var(--accent-orange);
-            margin: 10px 0;
+            margin: 5px 0;
         }
 
         .warning { color: #ff5252; font-size: 0.9em; display: none; }
 
         /* --- Résumé --- */
         .phase-rule {
-            margin-bottom: 15px;
-            padding-bottom: 15px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
             border-bottom: 1px solid var(--border-color);
         }
         .phase-rule:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .phase-rule h3 { color: var(--accent-green); margin: 0 0 5px 0; font-size: 1.1em; }
-        .phase-rule p { margin: 0; font-size: 0.95em; line-height: 1.4; color: #b0b0c0; }
+        .phase-rule h3 { color: var(--accent-green); margin: 0 0 4px 0; font-size: 1em; }
+        .phase-rule p { margin: 0; font-size: 0.9em; line-height: 1.3; color: #b0b0c0; }
 
+        /* Responsive pour petits écrans */
+        @media (max-width: 900px) {
+            .main-layout {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="main-layout">
     
-    <!-- Section Gestion des Joueurs & Mechs -->
-    <div class="panel">
-        <h1>Roster des Forces</h1>
-        <div id="playersContainer"></div>
-        <button class="add-btn" onclick="addPlayer()" style="border-style: solid; margin-top: 15px;">+ Ajouter un Joueur</button>
+    <!-- COLONNE DE GAUCHE : Roster & Résumé -->
+    <div class="column-left">
+        <!-- Section Gestion des Joueurs & Mechs -->
+        <div class="panel">
+            <h1>Roster des Forces</h1>
+            <div id="playersContainer"></div>
+            <button class="add-btn" onclick="addPlayer()" style="border-style: solid; margin-top: 10px;">+ Ajouter un Joueur</button>
+        </div>
+
+        <!-- Section Résumé des Règles -->
+        <div class="panel">
+            <h2>Résumé des Phases</h2>
+            <div class="phase-rule">
+                <h3>1. Initiative</h3>
+                <p>Chaque joueur lance 2D6. Le plus haut score choisit de déplacer en premier ou dernier.</p>
+            </div>
+            <div class="phase-rule">
+                <h3>2. Mouvement</h3>
+                <p>Déplacement alterné des unités. Détermine la distance et le TMM.</p>
+            </div>
+            <div class="phase-rule">
+                <h3>3. Combat</h3>
+                <p>Déclaration et résolution alternée des attaques. Dégâts simultanés en fin de phase.</p>
+            </div>
+            <div class="phase-rule">
+                <h3>4. Fin de Tour</h3>
+                <p>Application des dégâts, chaleur, jets de critiques et retrait des unités détruites.</p>
+            </div>
+        </div>
     </div>
 
-    <!-- Section du Calculateur de Combat -->
-    <div class="panel">
-        <h2>Calculateur de Tir</h2>
-        
-        <div class="shooter-header" id="currentShooterDisplay">
-            Veuillez sélectionner un Mech.
-        </div>
-        
-        <div class="form-group">
-            <label for="skill">Compétence du Tireur (Skill)</label>
-            <input type="number" id="skill" value="4" min="0" max="8" onchange="calculate()">
-        </div>
+    <!-- COLONNE DE DROITE : Calculateur de Tir -->
+    <div class="column-right">
+        <div class="panel" style="height: 100%; display: flex; flex-direction: column; box-sizing: border-box;">
+            <h2>Calculateur de Tir</h2>
+            
+            <div class="shooter-header" id="currentShooterDisplay">
+                Veuillez sélectionner un Mech.
+            </div>
+            
+            <div class="form-group">
+                <label for="skill">Compétence du Tireur (Skill)</label>
+                <input type="number" id="skill" value="4" min="0" max="8" onchange="calculate()">
+            </div>
 
-        <div class="form-group">
-            <label for="attackerMove">Mouvement du Tireur</label>
-            <select id="attackerMove" onchange="calculate()">
-                <option value="0">Immobile / Au sol (+0)</option>
-                <option value="2">Saut (Jumping) (+2)</option>
-            </select>
-        </div>
+            <div class="form-group">
+                <label for="attackerMove">Mouvement du Tireur</label>
+                <select id="attackerMove" onchange="calculate()">
+                    <option value="0">Immobile / Au sol (+0)</option>
+                    <option value="2">Saut (Jumping) (+2)</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label for="targetTMM">Mouvement Cible (TMM)</label>
-            <input type="number" id="targetTMM" value="1" min="0" max="6" onchange="calculate()">
-        </div>
+            <div class="form-group">
+                <label for="targetTMM">Mouvement Cible (TMM)</label>
+                <input type="number" id="targetTMM" value="1" min="0" max="6" onchange="calculate()">
+            </div>
 
-        <div class="form-group">
-            <label for="targetMoveType">Type de Mouvement Cible</label>
-            <select id="targetMoveType" onchange="calculate()">
-                <option value="0">Standard (+0)</option>
-                <option value="1">Cible a sauté (+1)</option>
-                <option value="-2">Cible immobile (-2)</option>
-            </select>
-        </div>
+            <div class="form-group">
+                <label for="targetMoveType">Type de Mouvement Cible</label>
+                <select id="targetMoveType" onchange="calculate()">
+                    <option value="0">Standard (+0)</option>
+                    <option value="1">Cible a sauté (+1)</option>
+                    <option value="-2">Cible immobile (-2)</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label for="range">Portée (Range)</label>
-            <select id="range" onchange="calculate()">
-                <option value="0">Courte (0-6") (+0)</option>
-                <option value="2">Moyenne (6-24") (+2)</option>
-                <option value="4">Longue (24-42") (+4)</option>
-                <option value="6">Extrême (>42") (+6)</option>
-            </select>
-        </div>
+            <div class="form-group">
+                <label for="range">Portée (Range)</label>
+                <select id="range" onchange="calculate()">
+                    <option value="0">Courte (0-6") (+0)</option>
+                    <option value="2">Moyenne (6-24") (+2)</option>
+                    <option value="4">Longue (24-42") (+4)</option>
+                    <option value="6">Extrême (>42") (+6)</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label for="terrain">Terrain / Couvert</label>
-            <select id="terrain" onchange="calculate()">
-                <option value="0">Aucun (+0)</option>
-                <option value="1">Bois clairs / Partiel (+1)</option>
-                <option value="2">Bois denses (+2)</option>
-            </select>
-        </div>
+            <div class="form-group">
+                <label for="terrain">Terrain / Couvert</label>
+                <select id="terrain" onchange="calculate()">
+                    <option value="0">Aucun (+0)</option>
+                    <option value="1">Bois clairs / Partiel (+1)</option>
+                    <option value="2">Bois denses (+2)</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label for="misc">Autres (Chaleur, Dégâts...)</label>
-            <input type="number" id="misc" value="0" onchange="calculate()">
-        </div>
+            <div class="form-group">
+                <label for="misc">Autres (Chaleur, Dégâts...)</label>
+                <input type="number" id="misc" value="0" onchange="calculate()">
+            </div>
 
-        <div class="result-box">
-            <div>Résultat requis sur 2D6 pour toucher</div>
-            <div class="result-number" id="finalResult">7</div>
-            <div class="warning" id="warningText">Tir Impossible ! (13+)</div>
-        </div>
+            <div class="result-box">
+                <div>Résultat requis sur 2D6 pour toucher</div>
+                <div class="result-number" id="finalResult">7</div>
+                <div class="warning" id="warningText">Tir Impossible ! (13+)</div>
+            </div>
 
-        <button class="primary" onclick="resetCalculator()">Réinitialiser ce tir (Garde le Skill)</button>
-    </div>
-
-    <!-- Section Résumé des Règles -->
-    <div class="panel">
-        <h2>Résumé des Phases</h2>
-        <div class="phase-rule">
-            <h3>1. Initiative</h3>
-            <p>Chaque joueur lance 2D6. Le joueur avec le résultat le plus élevé choisit de déplacer une unité en premier ou en dernier.</p>
-        </div>
-        <div class="phase-rule">
-            <h3>2. Mouvement</h3>
-            <p>En alternance, les joueurs déplacent leurs unités. C'est à ce moment que l'on détermine la distance parcourue et le TMM.</p>
-        </div>
-        <div class="phase-rule">
-            <h3>3. Combat</h3>
-            <p>Les joueurs alternent pour déclarer et résoudre les attaques. Les dégâts ne prennent effet qu'à la fin de la phase entière.</p>
-        </div>
-        <div class="phase-rule">
-            <h3>4. Fin de Tour</h3>
-            <p>Application des dégâts, ajustements liés à la chaleur, jets de coup critique et retrait des unités détruites.</p>
+            <button class="primary" onclick="resetCalculator()">Réinitialiser ce tir (Garde le Skill)</button>
         </div>
     </div>
 
 </div>
 
 <script>
-    // === DONNÉES ET ÉTAT GLOBAL ===
     let nextPlayerId = 3;
     let nextMechId = 5;
     
-    // État par défaut : 2 Joueurs avec 2 mechs chacun
     let players = [
         { 
             id: 1, 
@@ -341,9 +364,8 @@
         }
     ];
 
-    let currentMechId = 1; // Mech actif dans le calculateur
+    let currentMechId = 1;
 
-    // === GESTION DU ROSTER ===
     function renderPlayers() {
         const container = document.getElementById('playersContainer');
         container.innerHTML = '';
@@ -352,7 +374,6 @@
             const pDiv = document.createElement('div');
             pDiv.className = 'player-card';
 
-            // Construction du HTML pour les mechs de ce joueur
             const mechsHtml = player.mechs.map(mech => `
                 <div class="mech-row ${mech.id === currentMechId ? 'active-mech' : ''}">
                     <input type="text" class="mech-name-input" value="${mech.name}" 
@@ -379,14 +400,14 @@
     function updatePlayerName(playerId, newName) {
         const player = players.find(p => p.id === playerId);
         if (player) player.name = newName;
-        updateCalculatorHeader(); // Met à jour l'en-tête si le joueur actif a changé de nom
+        updateCalculatorHeader();
     }
 
     function updateMechName(playerId, mechId, newName) {
         const player = players.find(p => p.id === playerId);
         const mech = player.mechs.find(m => m.id === mechId);
         if (mech) mech.name = newName;
-        updateCalculatorHeader(); // Met à jour l'en-tête si le mech actif a changé de nom
+        updateCalculatorHeader();
     }
 
     function addPlayer() {
@@ -406,7 +427,6 @@
         }
     }
 
-    // === INTERACTION ROSTER <-> CALCULATEUR ===
     function findMechData(mechId) {
         for (let p of players) {
             let m = p.mechs.find(mech => mech.id === mechId);
@@ -417,11 +437,8 @@
 
     function selectMech(mechId) {
         currentMechId = mechId;
-        
-        // Re-rendre le roster pour mettre à jour la ligne surlignée (en vert)
         renderPlayers();
         
-        // Charger la compétence du Mech sélectionné dans le calculateur
         const data = findMechData(mechId);
         if (data) {
             document.getElementById('skill').value = data.mech.skill;
@@ -437,10 +454,7 @@
         }
     }
 
-
-    // === CALCULATEUR DE COMBAT ===
     function calculate() {
-        // 1. Récupération des valeurs
         const skill = parseInt(document.getElementById('skill').value) || 0;
         const attackerMove = parseInt(document.getElementById('attackerMove').value) || 0;
         const targetTMM = parseInt(document.getElementById('targetTMM').value) || 0;
@@ -449,19 +463,15 @@
         const terrain = parseInt(document.getElementById('terrain').value) || 0;
         const misc = parseInt(document.getElementById('misc').value) || 0;
 
-        // 2. Mise à jour de la donnée globale du Mech (Sauvegarde automatique)
         const data = findMechData(currentMechId);
         if (data && data.mech.skill !== skill) {
             data.mech.skill = skill;
-            // Mise à jour visuelle discrète dans la liste sans re-rendre tout le HTML
             const skillDisplay = document.getElementById(`display-skill-${currentMechId}`);
             if (skillDisplay) skillDisplay.innerText = `Skill: ${skill}`;
         }
 
-        // 3. Calcul du total
         const toHit = skill + attackerMove + targetTMM + targetMoveType + range + terrain + misc;
 
-        // 4. Affichage du résultat
         const resultElement = document.getElementById('finalResult');
         const warningElement = document.getElementById('warningText');
         resultElement.innerText = toHit;
@@ -479,7 +489,6 @@
     }
 
     function resetCalculator() {
-        // Ne réinitialise pas le Skill, uniquement les variables de la cible
         document.getElementById('attackerMove').value = 0;
         document.getElementById('targetTMM').value = 1;
         document.getElementById('targetMoveType').value = 0;
@@ -489,10 +498,9 @@
         calculate();
     }
 
-    // Initialisation au chargement de la page
     window.onload = function() {
-        renderPlayers(); // Génère l'interface des joueurs
-        selectMech(1);   // Sélectionne le premier mech par défaut
+        renderPlayers();
+        selectMech(1);
     };
 </script>
 
