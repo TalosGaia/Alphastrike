@@ -25,16 +25,18 @@
             align-items: center;
         }
 
-        h1, h2 {
+        h1, h2, h3 {
             text-transform: uppercase;
             letter-spacing: 2px;
-            color: var(--accent-orange);
             margin-top: 0;
         }
 
+        h1 { color: var(--accent-orange); }
+        h2 { color: var(--accent-orange); font-size: 1.3em;}
+
         .container {
             width: 100%;
-            max-width: 650px;
+            max-width: 700px;
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -48,40 +50,74 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
-        /* Résumé des règles */
-        .phase-rule {
+        /* --- Gestion des Joueurs --- */
+        .player-card {
+            background-color: #1f1f2a;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
             margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--border-color);
         }
 
-        .phase-rule:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .phase-rule h3 {
-            color: var(--accent-green);
-            margin: 0 0 5px 0;
-            font-size: 1.1em;
+        .player-name-input {
+            background: transparent;
+            border: none;
+            color: var(--accent-orange);
+            font-size: 1.2em;
+            font-weight: bold;
             text-transform: uppercase;
+            margin-bottom: 10px;
+            width: 100%;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 5px;
+        }
+        
+        .player-name-input:focus {
+            outline: none;
+            border-bottom-color: var(--accent-orange);
         }
 
-        .phase-rule p {
-            margin: 0;
-            font-size: 0.95em;
-            line-height: 1.4;
+        .mech-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            padding: 8px;
+            background-color: #2a2a35;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .mech-row.active-mech {
+            border-color: var(--accent-green);
+            background-color: #2e3b32;
+        }
+
+        .mech-name-input {
+            background-color: #12121a;
+            color: white;
+            border: 1px solid var(--border-color);
+            padding: 6px;
+            border-radius: 4px;
+            flex-grow: 1;
+            font-size: 0.9em;
+        }
+
+        .mech-skill-display {
+            font-size: 0.9em;
             color: #b0b0c0;
+            width: 60px;
+            text-align: center;
         }
 
-        /* Boutons */
+        /* --- Boutons --- */
         button {
             background-color: var(--border-color);
             color: var(--text-main);
             border: none;
-            padding: 10px 15px;
-            font-size: 1em;
+            padding: 8px 12px;
+            font-size: 0.9em;
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.2s;
@@ -89,18 +125,44 @@
             font-weight: bold;
         }
 
+        button:hover { background-color: #4f4f60; }
+        
+        button.btn-select { background-color: #3f3f50; }
+        button.btn-select:hover { background-color: var(--accent-green); color: white;}
+
         button.primary {
             background-color: var(--accent-green);
             color: white;
             width: 100%;
             margin-top: 10px;
+            padding: 12px;
+            font-size: 1em;
+        }
+        button.primary:hover { background-color: #45a049; }
+
+        button.add-btn {
+            background-color: transparent;
+            border: 1px dashed var(--border-color);
+            color: #b0b0c0;
+            width: 100%;
+            margin-top: 5px;
+        }
+        button.add-btn:hover {
+            border-color: var(--accent-orange);
+            color: var(--accent-orange);
+            background-color: rgba(255, 107, 0, 0.1);
         }
 
-        button.primary:hover {
-            background-color: #45a049;
+        /* --- Calculateur --- */
+        .shooter-header {
+            background-color: #1f1f2a;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid var(--accent-green);
+            margin-bottom: 20px;
+            font-weight: bold;
         }
 
-        /* Calculateur */
         .form-group {
             display: flex;
             justify-content: space-between;
@@ -110,10 +172,7 @@
             border-bottom: 1px dashed #3f3f50;
         }
 
-        label {
-            font-weight: bold;
-            flex-grow: 1;
-        }
+        label { font-weight: bold; flex-grow: 1; }
 
         select, input[type="number"] {
             background-color: #12121a;
@@ -141,45 +200,38 @@
             margin: 10px 0;
         }
 
-        .warning {
-            color: #ff5252;
-            font-size: 0.9em;
-            display: none;
+        .warning { color: #ff5252; font-size: 0.9em; display: none; }
+
+        /* --- Résumé --- */
+        .phase-rule {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
         }
+        .phase-rule:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .phase-rule h3 { color: var(--accent-green); margin: 0 0 5px 0; font-size: 1.1em; }
+        .phase-rule p { margin: 0; font-size: 0.95em; line-height: 1.4; color: #b0b0c0; }
 
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- Section Résumé des Règles -->
+    
+    <!-- Section Gestion des Joueurs & Mechs -->
     <div class="panel">
-        <h1>Résumé des Phases</h1>
-        
-        <div class="phase-rule">
-            <h3>1. Initiative</h3>
-            <p>Chaque joueur lance 2D6. Le joueur avec le résultat le plus élevé choisit de déplacer une unité en premier ou en dernier.</p>
-        </div>
-        
-        <div class="phase-rule">
-            <h3>2. Mouvement</h3>
-            <p>En alternance, les joueurs déplacent leurs unités. C'est à ce moment que l'on détermine la distance parcourue et le modificateur de mouvement cible (TMM) pour le reste du tour.</p>
-        </div>
-        
-        <div class="phase-rule">
-            <h3>3. Combat</h3>
-            <p>Les joueurs alternent pour déclarer et résoudre les attaques. <strong>Attention :</strong> les dégâts infligés ne prennent effet qu'à la fin de la phase entière (simultanéité des tirs).</p>
-        </div>
-        
-        <div class="phase-rule">
-            <h3>4. Fin de Tour</h3>
-            <p>Application des dégâts simultanés, ajustements liés à la chaleur, jets de coup critique éventuels, et retrait des unités détruites.</p>
-        </div>
+        <h1>Roster des Forces</h1>
+        <div id="playersContainer"></div>
+        <button class="add-btn" onclick="addPlayer()" style="border-style: solid; margin-top: 15px;">+ Ajouter un Joueur</button>
     </div>
 
     <!-- Section du Calculateur de Combat -->
     <div class="panel">
-        <h2>Calculateur de Modificateurs</h2>
+        <h2>Calculateur de Tir</h2>
+        
+        <div class="shooter-header" id="currentShooterDisplay">
+            Veuillez sélectionner un Mech.
+        </div>
         
         <div class="form-group">
             <label for="skill">Compétence du Tireur (Skill)</label>
@@ -195,7 +247,7 @@
         </div>
 
         <div class="form-group">
-            <label for="targetTMM">Modificateur de Mouvement Cible (TMM)</label>
+            <label for="targetTMM">Mouvement Cible (TMM)</label>
             <input type="number" id="targetTMM" value="1" min="0" max="6" onchange="calculate()">
         </div>
 
@@ -222,13 +274,13 @@
             <label for="terrain">Terrain / Couvert</label>
             <select id="terrain" onchange="calculate()">
                 <option value="0">Aucun (+0)</option>
-                <option value="1">Bois clairs / Couvert partiel (+1)</option>
+                <option value="1">Bois clairs / Partiel (+1)</option>
                 <option value="2">Bois denses (+2)</option>
             </select>
         </div>
 
         <div class="form-group">
-            <label for="misc">Autres Modificateurs (Chaleur, Dégâts...)</label>
+            <label for="misc">Autres (Chaleur, Dégâts...)</label>
             <input type="number" id="misc" value="0" onchange="calculate()">
         </div>
 
@@ -238,14 +290,157 @@
             <div class="warning" id="warningText">Tir Impossible ! (13+)</div>
         </div>
 
-        <button class="primary" onclick="resetCalculator()">Réinitialiser le calcul</button>
+        <button class="primary" onclick="resetCalculator()">Réinitialiser ce tir (Garde le Skill)</button>
     </div>
+
+    <!-- Section Résumé des Règles -->
+    <div class="panel">
+        <h2>Résumé des Phases</h2>
+        <div class="phase-rule">
+            <h3>1. Initiative</h3>
+            <p>Chaque joueur lance 2D6. Le joueur avec le résultat le plus élevé choisit de déplacer une unité en premier ou en dernier.</p>
+        </div>
+        <div class="phase-rule">
+            <h3>2. Mouvement</h3>
+            <p>En alternance, les joueurs déplacent leurs unités. C'est à ce moment que l'on détermine la distance parcourue et le TMM.</p>
+        </div>
+        <div class="phase-rule">
+            <h3>3. Combat</h3>
+            <p>Les joueurs alternent pour déclarer et résoudre les attaques. Les dégâts ne prennent effet qu'à la fin de la phase entière.</p>
+        </div>
+        <div class="phase-rule">
+            <h3>4. Fin de Tour</h3>
+            <p>Application des dégâts, ajustements liés à la chaleur, jets de coup critique et retrait des unités détruites.</p>
+        </div>
+    </div>
+
 </div>
 
 <script>
-    // === GESTION DU CALCULATEUR DE COMBAT ===
+    // === DONNÉES ET ÉTAT GLOBAL ===
+    let nextPlayerId = 3;
+    let nextMechId = 5;
+    
+    // État par défaut : 2 Joueurs avec 2 mechs chacun
+    let players = [
+        { 
+            id: 1, 
+            name: "Joueur 1 (Inner Sphere)", 
+            mechs: [
+                { id: 1, name: "Atlas AS7-D", skill: 4 },
+                { id: 2, name: "Locust LCT-1V", skill: 4 }
+            ] 
+        },
+        { 
+            id: 2, 
+            name: "Joueur 2 (Clans)", 
+            mechs: [
+                { id: 3, name: "Timber Wolf (Mad Cat)", skill: 3 },
+                { id: 4, name: "Dire Wolf (Daishi)", skill: 3 }
+            ] 
+        }
+    ];
+
+    let currentMechId = 1; // Mech actif dans le calculateur
+
+    // === GESTION DU ROSTER ===
+    function renderPlayers() {
+        const container = document.getElementById('playersContainer');
+        container.innerHTML = '';
+
+        players.forEach(player => {
+            const pDiv = document.createElement('div');
+            pDiv.className = 'player-card';
+
+            // Construction du HTML pour les mechs de ce joueur
+            const mechsHtml = player.mechs.map(mech => `
+                <div class="mech-row ${mech.id === currentMechId ? 'active-mech' : ''}">
+                    <input type="text" class="mech-name-input" value="${mech.name}" 
+                           onchange="updateMechName(${player.id}, ${mech.id}, this.value)" placeholder="Nom du Mech">
+                    <span class="mech-skill-display" id="display-skill-${mech.id}">Skill: ${mech.skill}</span>
+                    <button class="btn-select" onclick="selectMech(${mech.id})">Tirer</button>
+                </div>
+            `).join('');
+
+            pDiv.innerHTML = `
+                <input type="text" class="player-name-input" value="${player.name}" 
+                       onchange="updatePlayerName(${player.id}, this.value)" placeholder="Nom du Joueur">
+                <div class="mech-list">
+                    ${mechsHtml}
+                </div>
+                <button class="add-btn" onclick="addMech(${player.id})">+ Ajouter un Mech</button>
+            `;
+            container.appendChild(pDiv);
+        });
+
+        updateCalculatorHeader();
+    }
+
+    function updatePlayerName(playerId, newName) {
+        const player = players.find(p => p.id === playerId);
+        if (player) player.name = newName;
+        updateCalculatorHeader(); // Met à jour l'en-tête si le joueur actif a changé de nom
+    }
+
+    function updateMechName(playerId, mechId, newName) {
+        const player = players.find(p => p.id === playerId);
+        const mech = player.mechs.find(m => m.id === mechId);
+        if (mech) mech.name = newName;
+        updateCalculatorHeader(); // Met à jour l'en-tête si le mech actif a changé de nom
+    }
+
+    function addPlayer() {
+        players.push({
+            id: nextPlayerId++,
+            name: `Nouveau Joueur`,
+            mechs: [{ id: nextMechId++, name: "Nouveau Mech", skill: 4 }]
+        });
+        renderPlayers();
+    }
+
+    function addMech(playerId) {
+        const player = players.find(p => p.id === playerId);
+        if (player) {
+            player.mechs.push({ id: nextMechId++, name: "Nouveau Mech", skill: 4 });
+            renderPlayers();
+        }
+    }
+
+    // === INTERACTION ROSTER <-> CALCULATEUR ===
+    function findMechData(mechId) {
+        for (let p of players) {
+            let m = p.mechs.find(mech => mech.id === mechId);
+            if (m) return { player: p, mech: m };
+        }
+        return null;
+    }
+
+    function selectMech(mechId) {
+        currentMechId = mechId;
+        
+        // Re-rendre le roster pour mettre à jour la ligne surlignée (en vert)
+        renderPlayers();
+        
+        // Charger la compétence du Mech sélectionné dans le calculateur
+        const data = findMechData(mechId);
+        if (data) {
+            document.getElementById('skill').value = data.mech.skill;
+            calculate();
+        }
+    }
+
+    function updateCalculatorHeader() {
+        const data = findMechData(currentMechId);
+        const header = document.getElementById('currentShooterDisplay');
+        if (data) {
+            header.innerHTML = `Tireur Actuel : <span style="color: var(--accent-orange)">${data.player.name}</span> - ${data.mech.name}`;
+        }
+    }
+
+
+    // === CALCULATEUR DE COMBAT ===
     function calculate() {
-        // Récupération des valeurs
+        // 1. Récupération des valeurs
         const skill = parseInt(document.getElementById('skill').value) || 0;
         const attackerMove = parseInt(document.getElementById('attackerMove').value) || 0;
         const targetTMM = parseInt(document.getElementById('targetTMM').value) || 0;
@@ -254,30 +449,37 @@
         const terrain = parseInt(document.getElementById('terrain').value) || 0;
         const misc = parseInt(document.getElementById('misc').value) || 0;
 
-        // Calcul du total
+        // 2. Mise à jour de la donnée globale du Mech (Sauvegarde automatique)
+        const data = findMechData(currentMechId);
+        if (data && data.mech.skill !== skill) {
+            data.mech.skill = skill;
+            // Mise à jour visuelle discrète dans la liste sans re-rendre tout le HTML
+            const skillDisplay = document.getElementById(`display-skill-${currentMechId}`);
+            if (skillDisplay) skillDisplay.innerText = `Skill: ${skill}`;
+        }
+
+        // 3. Calcul du total
         const toHit = skill + attackerMove + targetTMM + targetMoveType + range + terrain + misc;
 
-        // Affichage
+        // 4. Affichage du résultat
         const resultElement = document.getElementById('finalResult');
         const warningElement = document.getElementById('warningText');
-
         resultElement.innerText = toHit;
 
-        // Logique visuelle selon la difficulté
         if (toHit > 12) {
-            resultElement.style.color = '#ff5252'; // Rouge
+            resultElement.style.color = '#ff5252'; 
             warningElement.style.display = 'block';
-        } else if (toHit <= 12 && toHit >= 10) {
-            resultElement.style.color = '#ffa726'; // Orange
+        } else if (toHit >= 10) {
+            resultElement.style.color = '#ffa726'; 
             warningElement.style.display = 'none';
         } else {
-            resultElement.style.color = 'var(--accent-green)'; // Vert
+            resultElement.style.color = 'var(--accent-green)';
             warningElement.style.display = 'none';
         }
     }
 
     function resetCalculator() {
-        document.getElementById('skill').value = 4;
+        // Ne réinitialise pas le Skill, uniquement les variables de la cible
         document.getElementById('attackerMove').value = 0;
         document.getElementById('targetTMM').value = 1;
         document.getElementById('targetMoveType').value = 0;
@@ -289,7 +491,8 @@
 
     // Initialisation au chargement de la page
     window.onload = function() {
-        calculate();
+        renderPlayers(); // Génère l'interface des joueurs
+        selectMech(1);   // Sélectionne le premier mech par défaut
     };
 </script>
 
