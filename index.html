@@ -62,6 +62,39 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
+        /* --- En-tête Roster & Lien MUL --- */
+        .roster-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .roster-header h1 {
+            margin: 0;
+        }
+
+        .mul-link {
+            color: var(--accent-orange);
+            background-color: #12121a;
+            border: 1px solid var(--border-color);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .mul-link:hover {
+            background-color: var(--accent-orange);
+            color: white;
+            border-color: var(--accent-orange);
+        }
+
         /* --- Gestion des Joueurs --- */
         .player-card {
             background-color: #1f1f2a;
@@ -242,7 +275,10 @@
     <div class="column-left">
         <!-- Section Gestion des Joueurs & Mechs -->
         <div class="panel">
-            <h1>Roster des Forces</h1>
+            <div class="roster-header">
+                <h1>Roster des Forces</h1>
+                <a href="http://masterunitlist.info/Force/Build" target="_blank" class="mul-link">Master Unit List ↗</a>
+            </div>
             <div id="playersContainer"></div>
             <button class="add-btn" onclick="addPlayer()" style="border-style: solid; margin-top: 10px;">+ Ajouter un Joueur</button>
         </div>
