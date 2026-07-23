@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alpha Strike - Gestionnaire de Partie</title>
+    <title>Alpha Strike - Assistant de Partie</title>
     <style>
         :root {
             --bg-color: #1a1a24;
@@ -34,7 +34,7 @@
 
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 650px;
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -48,26 +48,34 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
-        /* Tracker de tour */
-        .tracker-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 15px;
+        /* Résumé des règles */
+        .phase-rule {
             margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .turn-display {
-            font-size: 1.5em;
-            font-weight: bold;
+        .phase-rule:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
         }
 
-        .phase-display {
-            font-size: 1.2em;
+        .phase-rule h3 {
             color: var(--accent-green);
+            margin: 0 0 5px 0;
+            font-size: 1.1em;
+            text-transform: uppercase;
         }
 
+        .phase-rule p {
+            margin: 0;
+            font-size: 0.95em;
+            line-height: 1.4;
+            color: #b0b0c0;
+        }
+
+        /* Boutons */
         button {
             background-color: var(--border-color);
             color: var(--text-main);
@@ -79,11 +87,6 @@
             transition: background-color 0.2s;
             text-transform: uppercase;
             font-weight: bold;
-        }
-
-        button:hover {
-            background-color: var(--accent-orange);
-            color: white;
         }
 
         button.primary {
@@ -149,16 +152,28 @@
 <body>
 
 <div class="container">
-    <!-- Section de Suivi des Tours -->
+    <!-- Section Résumé des Règles -->
     <div class="panel">
-        <h1>Gestionnaire de Partie</h1>
-        <div class="tracker-header">
-            <div class="turn-display">Tour: <span id="turnCounter">1</span></div>
-            <div class="phase-display" id="phaseDisplay">Phase: Initiative</div>
+        <h1>Résumé des Phases</h1>
+        
+        <div class="phase-rule">
+            <h3>1. Initiative</h3>
+            <p>Chaque joueur lance 2D6. Le joueur avec le résultat le plus élevé choisit de déplacer une unité en premier ou en dernier.</p>
         </div>
-        <div style="display: flex; gap: 10px;">
-            <button onclick="prevPhase()">Phase Précédente</button>
-            <button onclick="nextPhase()" style="flex-grow: 1;">Phase Suivante</button>
+        
+        <div class="phase-rule">
+            <h3>2. Mouvement</h3>
+            <p>En alternance, les joueurs déplacent leurs unités. C'est à ce moment que l'on détermine la distance parcourue et le modificateur de mouvement cible (TMM) pour le reste du tour.</p>
+        </div>
+        
+        <div class="phase-rule">
+            <h3>3. Combat</h3>
+            <p>Les joueurs alternent pour déclarer et résoudre les attaques. <strong>Attention :</strong> les dégâts infligés ne prennent effet qu'à la fin de la phase entière (simultanéité des tirs).</p>
+        </div>
+        
+        <div class="phase-rule">
+            <h3>4. Fin de Tour</h3>
+            <p>Application des dégâts simultanés, ajustements liés à la chaleur, jets de coup critique éventuels, et retrait des unités détruites.</p>
         </div>
     </div>
 
@@ -228,43 +243,6 @@
 </div>
 
 <script>
-    // === GESTION DU TOUR ET DES PHASES ===
-    let currentTurn = 1;
-    const phases = [
-        "Initiative", 
-        "Mouvement", 
-        "Combat", 
-        "Fin de Tour"
-    ];
-    let currentPhaseIndex = 0;
-
-    function updateTrackerUI() {
-        document.getElementById('turnCounter').innerText = currentTurn;
-        document.getElementById('phaseDisplay').innerText = `Phase: ${phases[currentPhaseIndex]}`;
-    }
-
-    function nextPhase() {
-        currentPhaseIndex++;
-        if (currentPhaseIndex >= phases.length) {
-            currentPhaseIndex = 0;
-            currentTurn++;
-        }
-        updateTrackerUI();
-    }
-
-    function prevPhase() {
-        currentPhaseIndex--;
-        if (currentPhaseIndex < 0) {
-            if (currentTurn > 1) {
-                currentTurn--;
-                currentPhaseIndex = phases.length - 1;
-            } else {
-                currentPhaseIndex = 0; // Bloque au tour 1, phase 0
-            }
-        }
-        updateTrackerUI();
-    }
-
     // === GESTION DU CALCULATEUR DE COMBAT ===
     function calculate() {
         // Récupération des valeurs
@@ -311,12 +289,9 @@
 
     // Initialisation au chargement de la page
     window.onload = function() {
-        updateTrackerUI();
         calculate();
     };
 </script>
 
 </body>
 </html>
-
-
