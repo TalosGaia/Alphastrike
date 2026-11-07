@@ -104,6 +104,19 @@
             margin-bottom: 12px;
         }
 
+        .player-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .player-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
         .player-name-input {
             background: transparent;
             border: none;
@@ -111,8 +124,10 @@
             font-size: 1.1em;
             font-weight: bold;
             text-transform: uppercase;
-            margin-bottom: 8px;
-            width: 100%;
+            margin-bottom: 0;
+            width: auto;
+            min-width: 0;
+            flex: 1;
             border-bottom: 1px dashed var(--border-color);
             padding-bottom: 4px;
         }
@@ -174,6 +189,18 @@
         
         button.btn-select { background-color: #3f3f50; }
         button.btn-select:hover { background-color: var(--accent-green); color: white;}
+
+        button.btn-remove {
+            background-color: #5a2929;
+            color: #ffdada;
+        }
+        button.btn-remove:hover { background-color: #a83232; }
+
+        button.btn-remove-mech {
+            flex-shrink: 0;
+            padding: 5px 9px;
+            font-size: 1em;
+        }
 
         button.primary {
             background-color: var(--accent-green);
@@ -265,6 +292,17 @@
                 flex-direction: column;
             }
         }
+
+        @media (max-width: 520px) {
+            .player-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .player-actions {
+                flex-wrap: wrap;
+            }
+        }
     </style>
 </head>
 <body>
@@ -280,6 +318,7 @@
                 <a href="https://masterunitlist.battletech.com/force" target="_blank" class="mul-link">Master Unit List ↗</a>
             </div>
             <div id="playersContainer"></div>
+            <input type="file" id="importRosterFile" accept="application/json,.json" hidden onchange="importPlayerFromFile(this.files[0]); this.value = '';">
             <button class="add-btn" onclick="addPlayer()" style="border-style: solid; margin-top: 10px;">+ Ajouter un Joueur</button>
         </div>
 
@@ -412,7 +451,8 @@
 
             const mechsHtml = player.mechs.map(mech => `
                 <div class="mech-row ${mech.id === currentMechId ? 'active-mech' : ''}">
-                    <input type="text" class="mech-name-input" value="${mech.name}" 
+                    <button class="btn-remove btn-remove-mech" onclick="removeMech(${player.id}, ${mech.id})" aria-label="Retirer ${escapeHtml(mech.name)}" title="Retirer ce mech">&times;</button>
+                    <input type="text" class="mech-name-input" value="${escapeHtml(mech.name)}"
                            onchange="updateMechName(${player.id}, ${mech.id}, this.value)" placeholder="Nom du Mech">
                     <span class="mech-skill-display" id="display-skill-${mech.id}">Skill: ${mech.skill}</span>
                     <button class="btn-select" onclick="selectMech(${mech.id})">Tirer</button>
@@ -420,8 +460,15 @@
             `).join('');
 
             pDiv.innerHTML = `
-                <input type="text" class="player-name-input" value="${player.name}" 
-                       onchange="updatePlayerName(${player.id}, this.value)" placeholder="Nom du Joueur">
+                <div class="player-header">
+                    <input type="text" class="player-name-input" value="${escapeHtml(player.name)}"
+                           onchange="updatePlayerName(${player.id}, this.value)" placeholder="Nom du Joueur">
+                    <div class="player-actions">
+                        <button onclick="exportPlayer(${player.id})">Exporter</button>
+                        <button onclick="document.getElementById('importRosterFile').click()">Importer</button>
+                        <button class="btn-remove" onclick="removePlayer(${player.id})" aria-label="Supprimer ${escapeHtml(player.name)}" title="Supprimer le joueur">&times;</button>
+                    </div>
+                </div>
                 <div class="mech-list">
                     ${mechsHtml}
                 </div>
@@ -431,6 +478,16 @@
         });
 
         updateCalculatorHeader();
+    }
+
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, character => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[character]);
     }
 
     function updatePlayerName(playerId, newName) {
@@ -455,12 +512,124 @@
         renderPlayers();
     }
 
+    function removePlayer(playerId) {
+        const playerIndex = players.findIndex(player => player.id === playerId);
+        if (playerIndex === -1) return;
+
+        const removedSelectedMech = players[playerIndex].mechs.some(mech => mech.id === currentMechId);
+        players.splice(playerIndex, 1);
+
+        if (removedSelectedMech) {
+            currentMechId = players.flatMap(player => player.mechs)[0]?.id ?? null;
+        }
+
+        renderPlayers();
+
+        const selectedMech = findMechData(currentMechId);
+        if (selectedMech) {
+            document.getElementById('skill').value = selectedMech.mech.skill;
+        } else if (currentMechId === null) {
+            document.getElementById('skill').value = 4;
+        }
+        calculate();
+    }
+
     function addMech(playerId) {
         const player = players.find(p => p.id === playerId);
         if (player) {
             player.mechs.push({ id: nextMechId++, name: "Nouveau Mech", skill: 4 });
             renderPlayers();
         }
+    }
+
+    function exportPlayer(playerId) {
+        const player = players.find(p => p.id === playerId);
+        if (!player) return;
+
+        const roster = {
+            name: player.name,
+            mechs: player.mechs.map(mech => ({ name: mech.name, skill: mech.skill }))
+        };
+        const file = new Blob([JSON.stringify(roster, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(file);
+        const link = document.createElement('a');
+        const filename = player.name.trim().replace(/[<>:"/\\|?*\x00-\x1F]/g, '_') || 'joueur';
+        link.href = url;
+        link.download = `${filename}.json`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    async function importPlayerFromFile(file) {
+        if (!file) return;
+
+        let contents;
+        try {
+            contents = await file.text();
+        } catch {
+            alert('Impossible de lire le fichier sélectionné.');
+            return;
+        }
+
+        let roster;
+        try {
+            roster = JSON.parse(contents);
+        } catch {
+            alert('Le fichier sélectionné ne contient pas un JSON valide.');
+            return;
+        }
+
+        if (
+            !roster ||
+            typeof roster !== 'object' ||
+            Array.isArray(roster) ||
+            typeof roster.name !== 'string' ||
+            !Array.isArray(roster.mechs) ||
+            !roster.mechs.every(mech =>
+                mech &&
+                typeof mech === 'object' &&
+                typeof mech.name === 'string' &&
+                typeof mech.skill === 'number' &&
+                Number.isFinite(mech.skill)
+            )
+        ) {
+            alert('Le fichier doit contenir un joueur avec un nom et une liste de mechs valides.');
+            return;
+        }
+
+        players.push({
+            id: nextPlayerId++,
+            name: roster.name,
+            mechs: roster.mechs.map(mech => ({
+                id: nextMechId++,
+                name: mech.name,
+                skill: mech.skill
+            }))
+        });
+        renderPlayers();
+    }
+
+    function removeMech(playerId, mechId) {
+        const player = players.find(p => p.id === playerId);
+        if (!player) return;
+
+        const mechIndex = player.mechs.findIndex(mech => mech.id === mechId);
+        if (mechIndex === -1) return;
+
+        const removedSelectedMech = currentMechId === mechId;
+        player.mechs.splice(mechIndex, 1);
+
+        if (removedSelectedMech) {
+            currentMechId = players.flatMap(rosterPlayer => rosterPlayer.mechs)[0]?.id ?? null;
+        }
+
+        renderPlayers();
+
+        const selectedMech = findMechData(currentMechId);
+        if (selectedMech) {
+            document.getElementById('skill').value = selectedMech.mech.skill;
+        }
+        calculate();
     }
 
     function findMechData(mechId) {
@@ -486,7 +655,14 @@
         const data = findMechData(currentMechId);
         const header = document.getElementById('currentShooterDisplay');
         if (data) {
-            header.innerHTML = `Tireur Actuel : <span style="color: var(--accent-orange)">${data.player.name}</span> - ${data.mech.name}`;
+            header.textContent = 'Tireur Actuel : ';
+            const playerName = document.createElement('span');
+            playerName.style.color = 'var(--accent-orange)';
+            playerName.textContent = data.player.name;
+            header.appendChild(playerName);
+            header.appendChild(document.createTextNode(` - ${data.mech.name}`));
+        } else {
+            header.textContent = 'Veuillez sélectionner un Mech.';
         }
     }
 

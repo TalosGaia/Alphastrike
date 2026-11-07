@@ -9,7 +9,8 @@
             "type": "chrome",
             "request": "launch",
             "name": "Open index.html",
-            "file": "/workspaces/Alphastrike/index.html"
+            "file": "index.html"
+            //"file": "D:/workspaces/Alphastrike/index.html"
         }
     ]
 }
