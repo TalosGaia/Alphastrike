@@ -52,7 +52,84 @@
         button.primary { background: #4caf50; border-color: #4caf50; color: white; }
         button.danger { background: #5a2929; }
 
+        .back-link {
+            display: inline-block;
+            margin-bottom: 16px;
+            color: #ff6b00;
+            text-decoration: none;
+        }
+
+        .back-link:hover { text-decoration: underline; }
+
         select { flex: 1; min-width: 220px; }
+
+        .catalog-layout {
+            display: grid;
+            grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .catalog-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .catalog-list button {
+            text-align: left;
+            overflow-wrap: anywhere;
+        }
+
+        .catalog-list button[aria-pressed="true"] {
+            border-color: #4caf50;
+            background: #2e3b32;
+        }
+
+        #mechFields {
+            display: grid;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .field-group {
+            min-width: 0;
+            padding: 12px;
+            border: 1px solid #3f3f50;
+            border-radius: 4px;
+        }
+
+        .field-group legend {
+            padding: 0 6px;
+            color: #ff6b00;
+            font-weight: bold;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: minmax(120px, 0.8fr) minmax(0, 1.2fr);
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+        }
+
+        .field-row input, .field-row textarea {
+            width: 100%;
+            min-height: 36px;
+            padding: 7px;
+            border: 1px solid #3f3f50;
+            border-radius: 4px;
+            background: #12121a;
+            color: #e0e0e0;
+            font: inherit;
+        }
+
+        .field-row textarea {
+            min-height: 72px;
+            resize: vertical;
+        }
 
         textarea {
             display: block;
@@ -75,36 +152,54 @@
         @media (max-width: 600px) {
             body { padding: 12px; }
             .panel { padding: 14px; }
+            .catalog-layout { grid-template-columns: 1fr; }
+            .catalog-list { max-height: 180px; }
+            .field-row { grid-template-columns: 1fr; gap: 4px; }
         }
     </style>
 </head>
 <body>
+    <a class="back-link" href="../index.html">← Retour au roster</a>
     <h1>Gestion du catalogue des mechs</h1>
     <section class="panel" aria-label="Editeur du catalogue">
+        <h2>Gestion du JSON</h2>
         <div class="toolbar">
             <button type="button" id="openButton">Ouvrir mech.json</button>
             <button type="button" id="saveButton" class="primary">Enregistrer mech.json</button>
             <button type="button" id="validateButton">Valider le JSON</button>
             <input id="fileInput" type="file" accept=".json,application/json" hidden>
         </div>
+        <h2>Gestion des mechs</h2>
         <div class="editor-toolbar">
-            <select id="mechSelect" aria-label="Mech à sélectionner">
-                <option value="">Aucun mech chargé</option>
-            </select>
             <button type="button" id="addButton">Ajouter un mech</button>
             <button type="button" id="removeButton" class="danger">Supprimer le mech sélectionné</button>
+            <button type="button" id="importHtmlButton">Importer depuis une page HTML</button>
+            <input id="htmlFileInput" type="file" accept=".html,.htm,text/html" hidden>
         </div>
-        <p class="hint">Modifiez le JSON ci-dessous. L’enregistrement écrit dans le fichier ouvert si le navigateur le permet ; sinon, un fichier mech.json est téléchargé.</p>
+        <div class="catalog-layout">
+            <section aria-label="Liste des mechs">
+                <h2>Mechs du catalogue</h2>
+                <div id="mechList" class="catalog-list"></div>
+            </section>
+            <section aria-label="Détails du mech sélectionné">
+                <h2 id="selectedMechTitle">Sélectionnez un mech</h2>
+                <div id="mechFields"></div>
+            </section>
+        </div>
+        <p class="hint">Les champs édités mettent à jour le JSON ci-dessous. Vous pouvez aussi modifier directement le JSON ; la liste et les champs seront actualisés lorsque vous quitterez l’éditeur.</p>
         <textarea id="jsonEditor" spellcheck="false" aria-label="Contenu JSON du catalogue" placeholder="Ouvrez mech.json ou collez son contenu ici."></textarea>
         <p id="status" role="status" aria-live="polite"></p>
     </section>
 
     <script>
         const editor = document.getElementById('jsonEditor');
-        const mechSelect = document.getElementById('mechSelect');
+        const mechList = document.getElementById('mechList');
+        const mechFields = document.getElementById('mechFields');
+        const selectedMechTitle = document.getElementById('selectedMechTitle');
         const fileInput = document.getElementById('fileInput');
         const status = document.getElementById('status');
         let fileHandle = null;
+        let selectedMechIndex = -1;
 
         function setStatus(message, isError = false) {
             status.textContent = message;
@@ -128,22 +223,126 @@
             return catalog;
         }
 
-        function refreshMechList(selectedIndex = 0) {
+        function refreshMechList(selectedIndex = selectedMechIndex, renderFields = true) {
             const catalog = parseCatalog();
-            mechSelect.replaceChildren();
+            mechList.replaceChildren();
+            selectedMechIndex = catalog.mechs.length
+                ? Math.max(0, Math.min(selectedIndex, catalog.mechs.length - 1))
+                : -1;
+
             catalog.mechs.forEach((mech, index) => {
-                const option = document.createElement('option');
-                option.value = String(index);
-                option.textContent = mech.name;
-                mechSelect.appendChild(option);
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = mech.name;
+                button.setAttribute('aria-pressed', String(index === selectedMechIndex));
+                button.addEventListener('click', () => selectMech(index));
+                mechList.appendChild(button);
             });
-            if (catalog.mechs.length) {
-                mechSelect.value = String(Math.min(selectedIndex, catalog.mechs.length - 1));
-            } else {
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = 'Aucun mech dans le catalogue';
-                mechSelect.appendChild(option);
+
+            if (renderFields) {
+                if (selectedMechIndex >= 0) {
+                    renderMechFields(catalog.mechs[selectedMechIndex]);
+                } else {
+                    selectedMechTitle.textContent = 'Aucun mech dans le catalogue';
+                    mechFields.replaceChildren();
+                }
+            }
+        }
+
+        function selectMech(index) {
+            selectedMechIndex = index;
+            refreshMechList(index);
+        }
+
+        function createField(parent, key, value, path) {
+            if (Array.isArray(value)) {
+                if (value.every(item => item === null || ['string', 'number', 'boolean'].includes(typeof item))) {
+                    const row = document.createElement('label');
+                    row.className = 'field-row';
+                    const title = document.createElement('span');
+                    title.textContent = key;
+                    const input = document.createElement('textarea');
+                    input.value = value.map(item => String(item ?? '')).join('\n');
+                    input.setAttribute('aria-label', path.join('.'));
+                    input.addEventListener('input', () =>
+                        updateField(path, input.value.trim() ? input.value.split('\n') : [], value)
+                    );
+                    row.append(title, input);
+                    parent.appendChild(row);
+                    return;
+                }
+
+                const group = document.createElement('fieldset');
+                group.className = 'field-group';
+                const legend = document.createElement('legend');
+                legend.textContent = key;
+                group.appendChild(legend);
+                value.forEach((item, index) => createField(group, `[${index}]`, item, [...path, index]));
+                parent.appendChild(group);
+                return;
+            }
+
+            if (value && typeof value === 'object') {
+                const group = document.createElement('fieldset');
+                group.className = 'field-group';
+                const legend = document.createElement('legend');
+                legend.textContent = key;
+                group.appendChild(legend);
+                Object.entries(value).forEach(([childKey, childValue]) =>
+                    createField(group, childKey, childValue, [...path, childKey])
+                );
+                parent.appendChild(group);
+                return;
+            }
+
+            const row = document.createElement('label');
+            row.className = 'field-row';
+            const title = document.createElement('span');
+            title.textContent = key;
+            const input = document.createElement('input');
+            input.type = typeof value === 'number' ? 'number' : 'text';
+            if (typeof value === 'number') input.step = 'any';
+            input.value = value === null || value === undefined ? '' : String(value);
+            input.setAttribute('aria-label', path.join('.'));
+            input.addEventListener('input', () => {
+                const nextValue = typeof value === 'number' ? Number(input.value) : input.value;
+                if (typeof value === 'number' && input.value.trim() === '') return;
+                updateField(path, nextValue);
+            });
+            row.append(title, input);
+            parent.appendChild(row);
+        }
+
+        function renderMechFields(mech) {
+            selectedMechTitle.textContent = mech.name;
+            mechFields.replaceChildren();
+            Object.entries(mech).forEach(([key, value]) => createField(mechFields, key, value, [key]));
+        }
+
+        function updateField(path, value, arrayTemplate) {
+            try {
+                const catalog = parseCatalog();
+                let target = catalog.mechs[selectedMechIndex];
+                for (let index = 0; index < path.length - 1; index++) target = target[path[index]];
+                if (arrayTemplate) {
+                    target[path[path.length - 1]] = value.map((item, index) => {
+                        const template = arrayTemplate[index] ?? arrayTemplate[0];
+                        if (typeof template === 'number') {
+                            const parsed = Number(item);
+                            return Number.isFinite(parsed) ? parsed : 0;
+                        }
+                        if (typeof template === 'boolean') return item === 'true';
+                        return item;
+                    });
+                } else {
+                    target[path[path.length - 1]] = value;
+                }
+                editor.value = `${JSON.stringify(catalog, null, 2)}\n`;
+                selectedMechTitle.textContent = catalog.mechs[selectedMechIndex].name;
+                refreshMechList(selectedMechIndex, false);
+                setStatus('Modification appliquée au JSON. Enregistrez le fichier pour la conserver.');
+            } catch (error) {
+                setStatus(error.message, true);
             }
         }
 
@@ -151,12 +350,149 @@
             if (!file) return;
             editor.value = await file.text();
             try {
-                refreshMechList();
+                refreshMechList(0);
                 setStatus(`${file.name} chargé. Vérifiez le contenu avant de l’enregistrer.`);
             } catch (error) {
                 setStatus(error.message, true);
             }
         }
+
+        function normalizeLabel(value) {
+            return value.trim().toLowerCase().replace(/[\s:_-]+/g, ' ').replace(/[：:]$/, '');
+        }
+
+        function findHtmlField(documentNode, bodyText, labels) {
+            const normalizedLabels = labels.map(normalizeLabel);
+            const elements = documentNode.querySelectorAll('th, td, dt, dd, label, strong, b, span, p');
+            for (const element of elements) {
+                const elementText = element.textContent.trim();
+                if (!normalizedLabels.includes(normalizeLabel(elementText))) continue;
+
+                const row = element.closest('tr');
+                if (row) {
+                    const cells = [...row.children];
+                    const cellIndex = cells.indexOf(element);
+                    if (cellIndex >= 0 && cells[cellIndex + 1]?.textContent.trim()) {
+                        return cells[cellIndex + 1].textContent.trim();
+                    }
+                }
+
+                const siblingValue = element.nextElementSibling?.textContent.trim();
+                if (siblingValue) return siblingValue;
+
+                const parent = element.parentElement;
+                const parentText = parent?.textContent.trim() ?? '';
+                const labelText = elementText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const parentMatch = parentText.match(new RegExp(`^${labelText}\\s*:?\\s*(.+)$`, 'i'));
+                if (parentMatch) return parentMatch[1].trim();
+            }
+
+            const escapedLabels = labels.map(label => label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            const match = bodyText.match(new RegExp(`(?:^|\\n)\\s*(?:${escapedLabels.join('|')})\\s*:?\\s*([^\\n]+)`, 'i'));
+            return match?.[1]?.trim() ?? '';
+        }
+
+        function parseImportedNumber(value) {
+            const match = String(value).match(/-?\d+(?:\.\d+)?/);
+            if (!match) return undefined;
+            const number = Number(match[0]);
+            return Number.isFinite(number) ? number : undefined;
+        }
+
+        function createMechFromHtml(contents, fileName) {
+            const parsedDocument = new DOMParser().parseFromString(contents, 'text/html');
+            const bodyText = parsedDocument.body?.innerText || parsedDocument.body?.textContent || '';
+            const title = parsedDocument.querySelector('h1, h2')?.textContent.trim()
+                || parsedDocument.querySelector('meta[property="og:title"]')?.content?.trim()
+                || parsedDocument.title.trim();
+            const name = title
+                .replace(/\s*[·|]\s*BattleTech.*$/i, '')
+                .replace(/\s*[-|]\s*Master Unit List.*$/i, '')
+                .trim();
+
+            if (!name) throw new Error('Impossible de trouver le nom du mech dans cette page HTML.');
+
+            const read = (labels, pattern) => {
+                const value = findHtmlField(parsedDocument, bodyText, labels);
+                return value ? value.match(pattern)?.[0] ?? value : '';
+            };
+            const number = (labels, pattern) => parseImportedNumber(read(labels, pattern));
+            const alphaStrike = {
+                pointValue: number(['Point Value', 'PV', 'Points de valeur'], /\d+/),
+                size: number(['Size'], /\d+/),
+                move: read(['Move', 'Movement'], /[\d./"'”’ -]+/),
+                tmm: number(['TMM'], /\d+/),
+                armor: number(['Armor', 'Armour'], /\d+/),
+                structure: number(['Structure', 'Structure Points', 'Structure (S)', 'Struct', 'STR'], /\d+/) ?? 0,
+                damage: {
+                    short: read(['Short', 'Short Range', 'Short Damage'], /[\d.*+-]+/),
+                    medium: read(['Medium', 'Medium Range', 'Medium Damage'], /[\d.*+-]+/),
+                    long: read(['Long', 'Long Range', 'Long Damage'], /[\d.*+-]+/)
+                },
+                abilities: []
+            };
+
+            const abilitiesText = findHtmlField(parsedDocument, bodyText, ['Abilities', 'Special Abilities']);
+            if (abilitiesText) {
+                alphaStrike.abilities = abilitiesText.split(/[,;\n]+/).map(value => value.trim()).filter(Boolean);
+            }
+
+            const mech = {
+                name,
+                alphaStrike,
+                source: { name: 'Import HTML', url: '', retrievedOn: new Date().toISOString().slice(0, 10) }
+            };
+            if (!Number.isFinite(alphaStrike.pointValue)) delete alphaStrike.pointValue;
+            if (!Number.isFinite(alphaStrike.size)) delete alphaStrike.size;
+            if (!Number.isFinite(alphaStrike.tmm)) delete alphaStrike.tmm;
+            if (!Number.isFinite(alphaStrike.armor)) delete alphaStrike.armor;
+            if (!Number.isFinite(alphaStrike.structure)) delete alphaStrike.structure;
+            if (!alphaStrike.move) delete alphaStrike.move;
+            for (const range of ['short', 'medium', 'long']) {
+                if (!alphaStrike.damage[range]) delete alphaStrike.damage[range];
+            }
+            if (!alphaStrike.abilities.length) delete alphaStrike.abilities;
+
+            const sourceUrl = parsedDocument.querySelector('link[rel="canonical"]')?.href;
+            if (sourceUrl) mech.source.url = sourceUrl;
+            return { mech, fileName };
+        }
+
+        document.getElementById('importHtmlButton').addEventListener('click', () => {
+            document.getElementById('htmlFileInput').click();
+        });
+
+        document.getElementById('htmlFileInput').addEventListener('change', async event => {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+
+            let contents;
+            try {
+                contents = await file.text();
+            } catch (error) {
+                setStatus(`Impossible de lire la page HTML : ${error.message}`, true);
+                return;
+            }
+
+            let imported;
+            try {
+                imported = createMechFromHtml(contents, file.name);
+            } catch (error) {
+                setStatus(error.message, true);
+                return;
+            }
+
+            try {
+                const catalog = parseCatalog();
+                catalog.mechs.push(imported.mech);
+                editor.value = `${JSON.stringify(catalog, null, 2)}\n`;
+                refreshMechList(catalog.mechs.length - 1);
+                setStatus(`${imported.mech.name} importé depuis ${imported.fileName}. Vérifiez les champs extraits puis enregistrez le catalogue.`);
+            } catch (error) {
+                setStatus(`Chargez d’abord un catalogue JSON valide : ${error.message}`, true);
+            }
+        });
 
         document.getElementById('openButton').addEventListener('click', async () => {
             if (window.showOpenFilePicker) {
@@ -187,7 +523,7 @@
 
         document.getElementById('validateButton').addEventListener('click', () => {
             try {
-                refreshMechList(Number(mechSelect.value) || 0);
+                refreshMechList(selectedMechIndex);
                 setStatus(`JSON valide — ${parseCatalog().mechs.length} mech(s) dans le catalogue.`);
             } catch (error) {
                 setStatus(error.message, true);
@@ -220,7 +556,7 @@
         document.getElementById('removeButton').addEventListener('click', () => {
             try {
                 const catalog = parseCatalog();
-                const index = Number(mechSelect.value);
+                const index = selectedMechIndex;
                 if (!Number.isInteger(index) || index < 0 || index >= catalog.mechs.length) {
                     setStatus('Sélectionnez un mech à supprimer.', true);
                     return;
@@ -229,6 +565,15 @@
                 editor.value = JSON.stringify(catalog, null, 2);
                 refreshMechList(index);
                 setStatus('Mech supprimé. Enregistrez le fichier pour confirmer la modification.');
+            } catch (error) {
+                setStatus(error.message, true);
+            }
+        });
+
+        editor.addEventListener('change', () => {
+            try {
+                refreshMechList(selectedMechIndex);
+                setStatus(`JSON valide — ${parseCatalog().mechs.length} mech(s) dans le catalogue.`);
             } catch (error) {
                 setStatus(error.message, true);
             }
@@ -289,7 +634,7 @@
                 })
                 .then(contents => {
                     editor.value = contents;
-                    refreshMechList();
+                    refreshMechList(0);
                     setStatus('Catalogue mech.json chargé.');
                 })
                 .catch(error => setStatus(`Chargement automatique impossible : ${error.message}. Ouvrez mech.json manuellement.`, true));

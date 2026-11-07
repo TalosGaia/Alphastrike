@@ -333,6 +333,40 @@
             background-color: rgba(255, 107, 0, 0.1);
         }
 
+        dialog {
+            width: min(440px, calc(100% - 32px));
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--panel-bg);
+            color: var(--text-main);
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.65);
+        }
+
+        .catalog-dialog-form h2 {
+            margin-bottom: 16px;
+        }
+
+        .catalog-dialog-form select {
+            width: 100%;
+            margin-top: 6px;
+        }
+
+        .catalog-dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .catalog-dialog-actions .primary {
+            width: auto;
+            margin-top: 0;
+        }
+
         /* --- Calculateur --- */
         .shooter-header {
             background-color: #1f1f2a;
@@ -429,12 +463,25 @@
                 <h1>Roster des Forces</h1>
                 <button onclick="document.getElementById('importDatabaseFile').click()">Importer bdd.json</button>
                 <button onclick="exportRosterDatabase()">Exporter bdd.json</button>
+                <a href="mech/gestionMech.html" class="mul-link">Gestion des mechs</a>
                 <a href="https://masterunitlist.battletech.com/force" target="_blank" class="mul-link">Master Unit List ↗</a>
             </div>
             <div class="roster-storage-status" id="rosterStorageStatus" role="status" aria-live="polite"></div>
             <div id="playersContainer"></div>
             <input type="file" id="importDatabaseFile" accept="application/json,.json" hidden onchange="importRosterDatabase(this.files[0]); this.value = '';">
             <input type="file" id="importRosterFile" accept="application/json,.json" hidden onchange="importPlayerFromFile(this.files[0], Number(this.dataset.playerId)); this.value = '';">
+            <input type="file" id="mechCatalogFile" accept="application/json,.json" hidden onchange="loadMechCatalogForPlayer(this.files[0], Number(this.dataset.playerId)); this.value = '';">
+            <dialog id="mechCatalogDialog">
+                <form method="dialog" class="catalog-dialog-form">
+                    <h2>Ajouter un mech du catalogue</h2>
+                    <label for="mechCatalogSelect">Mech</label>
+                    <select id="mechCatalogSelect"></select>
+                    <div class="catalog-dialog-actions">
+                        <button type="button" onclick="closeMechCatalogDialog()">Annuler</button>
+                        <button type="button" class="primary" onclick="addSelectedCatalogMech()">Ajouter</button>
+                    </div>
+                </form>
+            </dialog>
             <button class="add-btn" onclick="addPlayer()" style="border-style: solid; margin-top: 10px;">+ Ajouter un Joueur</button>
         </div>
 
@@ -537,6 +584,8 @@
     const ROSTER_STORAGE_KEY = 'alphastrike-roster';
     let nextPlayerId = 3;
     let nextMechId = 5;
+    let pendingCatalogPlayerId = null;
+    let pendingCatalogMechs = [];
     
     let players = [
         { 
@@ -777,6 +826,7 @@
                 </div>
                 <div class="roster-pv-total" id="player-pv-total-${player.id}">Total : ${player.mechs.reduce((total, mech) => total + (mech.pv ?? 0), 0)} PV</div>
                 <button class="add-btn" onclick="addMech(${player.id})">+ Ajouter un Mech</button>
+                <button class="add-btn" onclick="startMechCatalogImport(${player.id})">+ Ajouter depuis mech.json</button>
             `;
             container.appendChild(pDiv);
         });
@@ -904,6 +954,113 @@
             renderPlayers();
             saveRoster();
         }
+    }
+
+    function startMechCatalogImport(playerId) {
+        if (!players.some(player => player.id === playerId)) return;
+        const fileInput = document.getElementById('mechCatalogFile');
+        fileInput.dataset.playerId = playerId;
+        fileInput.click();
+    }
+
+    async function loadMechCatalogForPlayer(file, playerId) {
+        if (!file) return;
+
+        let contents;
+        try {
+            contents = await file.text();
+        } catch {
+            alert('Impossible de lire le fichier mech.json sélectionné.');
+            return;
+        }
+
+        let catalog;
+        try {
+            catalog = JSON.parse(contents);
+        } catch {
+            alert('Le fichier sélectionné ne contient pas un JSON valide.');
+            return;
+        }
+
+        if (
+            !catalog ||
+            typeof catalog !== 'object' ||
+            Array.isArray(catalog) ||
+            !Array.isArray(catalog.mechs) ||
+            catalog.mechs.length === 0 ||
+            !catalog.mechs.every(mech =>
+                mech &&
+                typeof mech === 'object' &&
+                !Array.isArray(mech) &&
+                typeof mech.name === 'string' &&
+                mech.alphaStrike &&
+                typeof mech.alphaStrike === 'object' &&
+                !Array.isArray(mech.alphaStrike)
+            )
+        ) {
+            alert('Le fichier doit contenir au moins un mech avec un nom et des données Alpha Strike.');
+            return;
+        }
+
+        if (!players.some(player => player.id === playerId)) {
+            alert('Le joueur sélectionné n’existe plus dans le roster.');
+            return;
+        }
+
+        pendingCatalogPlayerId = playerId;
+        pendingCatalogMechs = catalog.mechs;
+        const select = document.getElementById('mechCatalogSelect');
+        select.replaceChildren();
+        pendingCatalogMechs.forEach((mech, index) => {
+            const option = document.createElement('option');
+            option.value = String(index);
+            option.textContent = mech.name;
+            select.appendChild(option);
+        });
+        document.getElementById('mechCatalogDialog').showModal();
+    }
+
+    function closeMechCatalogDialog() {
+        document.getElementById('mechCatalogDialog').close();
+        pendingCatalogPlayerId = null;
+        pendingCatalogMechs = [];
+    }
+
+    function addSelectedCatalogMech() {
+        const player = players.find(item => item.id === pendingCatalogPlayerId);
+        const mechTemplate = pendingCatalogMechs[Number(document.getElementById('mechCatalogSelect').value)];
+        if (!player || !mechTemplate) {
+            alert('Sélectionnez un mech valide et un joueur existant.');
+            closeMechCatalogDialog();
+            return;
+        }
+
+        const stats = mechTemplate.alphaStrike;
+        const basePv = Number.isFinite(stats.pointValue) && stats.pointValue >= 0 ? stats.pointValue : 0;
+        const damage = stats.damage && typeof stats.damage === 'object' ? stats.damage : {};
+        const mech = {
+            id: nextMechId++,
+            name: mechTemplate.name,
+            skill: 4,
+            basePv,
+            pv: basePv,
+            size: Number.isFinite(stats.size) && stats.size >= 0 ? stats.size : 0,
+            move: stats.move === undefined || stats.move === null ? '' : String(stats.move),
+            tmm: Number.isFinite(stats.tmm) && stats.tmm >= 0 ? stats.tmm : 0,
+            armure: Number.isFinite(stats.armor) && stats.armor >= 0 ? stats.armor : 0,
+            structure: Number.isFinite(stats.structure) && stats.structure >= 0 ? stats.structure : 0,
+            damage: {
+                short: damage.short === undefined || damage.short === null ? '' : String(damage.short),
+                medium: damage.medium === undefined || damage.medium === null ? '' : String(damage.medium),
+                long: damage.long === undefined || damage.long === null ? '' : String(damage.long)
+            },
+            details: Array.isArray(stats.abilities) ? stats.abilities.join(', ') : ''
+        };
+        mech.pv = calculateMechPv(mech);
+        player.mechs.push(mech);
+        closeMechCatalogDialog();
+        renderPlayers();
+        saveRoster();
     }
 
     // Export JSON d'un joueur.

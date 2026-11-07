@@ -32,15 +32,62 @@
           "IF 1 Indirect Fire",
           "Missile Boat"
         ]
+      }
+    },
+    {
+      "name": "mech2",
+      "classification": {
+        "unitType": "",
+        "subtype": "",
+        "role": "",
+        "techBase": ""
+      },
+      "details": {
+        "tonnageTons": 20,
+        "introYear": 0,
+        "introEra": "",
+        "battleValue": 0
+      },
+      "alphaStrike": {
+        "pointValue": 40,
+        "size": 4,
+        "move": "14",
+        "tmm": 4,
+        "armor": 4,
+        "structure": 4,
+        "damage": {
+          "short": 1,
+          "medium": 2,
+          "long": 1,
+          "extreme": 0
+        },
+        "abilities": []
       },
       "art": {
-        "imageUrl": "https://masterunitlist.battletech.com/units/Locust%20LCT-3D%20%C2%B7%20BattleTech_files/locust-b3fd22.webp",
-        "source": "Technical Readout: ilClan",
+        "imageUrl": "",
+        "source": "",
         "alphaStrikeCardUrl": ""
       },
       "source": {
-        "name": "Master Unit List",
-        "url": "https://masterunitlist.battletech.com/units/locust-lct-3d",
+        "name": "",
+        "url": "",
+        "retrievedOn": ""
+      }
+    },
+    {
+      "name": "Atlas AS7-C",
+      "alphaStrike": {
+        "pointValue": 51,
+        "size": 4,
+        "move": "6\"",
+        "tmm": 1,
+        "armor": 10,
+        "structure": 4,
+        "damage": {}
+      },
+      "source": {
+        "name": "Import HTML",
+        "url": "https://masterunitlist.battletech.com/units/atlas-as7-c",
         "retrievedOn": "2026-11-07"
       }
     }
