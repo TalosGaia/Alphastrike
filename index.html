@@ -76,6 +76,16 @@
             margin: 0;
         }
 
+        .roster-storage-status {
+            margin: -5px 0 12px;
+            color: #b0b0c0;
+            font-size: 0.8em;
+        }
+
+        .roster-storage-status.error {
+            color: #ff8a80;
+        }
+
         .mul-link {
             color: var(--accent-orange);
             background-color: #12121a;
@@ -164,11 +174,29 @@
             font-size: 0.85em;
         }
 
+        .mech-pv-input {
+            width: 58px;
+            padding: 5px;
+            font-size: 0.85em;
+        }
+
+        .mech-pv-label {
+            color: #b0b0c0;
+            font-size: 0.75em;
+        }
+
         .mech-skill-display {
             font-size: 0.85em;
             color: #b0b0c0;
             width: 55px;
             text-align: center;
+        }
+
+        .roster-pv-total {
+            margin: 4px 0 8px;
+            color: #b0b0c0;
+            font-size: 0.9em;
+            text-align: right;
         }
 
         /* --- Boutons --- */
@@ -315,9 +343,13 @@
         <div class="panel">
             <div class="roster-header">
                 <h1>Roster des Forces</h1>
+                <button onclick="document.getElementById('importDatabaseFile').click()">Importer bdd.json</button>
+                <button onclick="exportRosterDatabase()">Exporter bdd.json</button>
                 <a href="https://masterunitlist.battletech.com/force" target="_blank" class="mul-link">Master Unit List ↗</a>
             </div>
+            <div class="roster-storage-status" id="rosterStorageStatus" role="status" aria-live="polite"></div>
             <div id="playersContainer"></div>
+            <input type="file" id="importDatabaseFile" accept="application/json,.json" hidden onchange="importRosterDatabase(this.files[0]); this.value = '';">
             <input type="file" id="importRosterFile" accept="application/json,.json" hidden onchange="importPlayerFromFile(this.files[0]); this.value = '';">
             <button class="add-btn" onclick="addPlayer()" style="border-style: solid; margin-top: 10px;">+ Ajouter un Joueur</button>
         </div>
@@ -417,6 +449,8 @@
 </div>
 
 <script>
+    // Données du roster : joueurs, mechs et sélection courante.
+    const ROSTER_STORAGE_KEY = 'alphastrike-roster';
     let nextPlayerId = 3;
     let nextMechId = 5;
     
@@ -425,22 +459,116 @@
             id: 1, 
             name: "Joueur 1 (Inner Sphere)", 
             mechs: [
-                { id: 1, name: "Atlas AS7-D", skill: 4 },
-                { id: 2, name: "Locust LCT-1V", skill: 4 }
+                { id: 1, name: "Atlas AS7-D", skill: 4, pv: 0 },
+                { id: 2, name: "Locust LCT-1V", skill: 4, pv: 0 }
             ] 
         },
         { 
             id: 2, 
             name: "Joueur 2 (Clans)", 
             mechs: [
-                { id: 3, name: "Timber Wolf (Mad Cat)", skill: 3 },
-                { id: 4, name: "Dire Wolf (Daishi)", skill: 3 }
+                { id: 3, name: "Timber Wolf (Mad Cat)", skill: 3, pv: 0 },
+                { id: 4, name: "Dire Wolf (Daishi)", skill: 3, pv: 0 }
             ] 
         }
     ];
 
     let currentMechId = 1;
 
+    // Persistance et validation du roster complet.
+    function setRosterStorageStatus(message, isError = false) {
+        const status = document.getElementById('rosterStorageStatus');
+        status.textContent = message;
+        status.classList.toggle('error', isError);
+    }
+
+    function isValidStoredRoster(data) {
+        if (!data || typeof data !== 'object' || !Array.isArray(data.players)) return false;
+
+        const playerIds = new Set();
+        const mechIds = new Set();
+        for (const player of data.players) {
+            if (
+                !player ||
+                !Number.isSafeInteger(player.id) ||
+                player.id < 1 ||
+                playerIds.has(player.id) ||
+                typeof player.name !== 'string' ||
+                !Array.isArray(player.mechs)
+            ) return false;
+
+            playerIds.add(player.id);
+            for (const mech of player.mechs) {
+                if (
+                    !mech ||
+                    !Number.isSafeInteger(mech.id) ||
+                    mech.id < 1 ||
+                    mechIds.has(mech.id) ||
+                    typeof mech.name !== 'string' ||
+                    typeof mech.skill !== 'number' ||
+                    !Number.isFinite(mech.skill) ||
+                    (mech.pv !== undefined && (typeof mech.pv !== 'number' || !Number.isFinite(mech.pv) || mech.pv < 0))
+                ) return false;
+
+                mechIds.add(mech.id);
+            }
+        }
+
+        return data.currentMechId === null ||
+            (Number.isSafeInteger(data.currentMechId) && mechIds.has(data.currentMechId));
+    }
+
+    function applyStoredRoster(data) {
+        players = data.players;
+        players.forEach(player => player.mechs.forEach(mech => {
+            mech.pv ??= 0;
+        }));
+        nextPlayerId = Math.max(0, ...players.map(player => player.id)) + 1;
+        nextMechId = Math.max(0, ...players.flatMap(player => player.mechs.map(mech => mech.id))) + 1;
+        currentMechId = data.currentMechId ?? players.flatMap(player => player.mechs)[0]?.id ?? null;
+    }
+
+    function loadRoster() {
+        let savedRoster;
+        try {
+            savedRoster = localStorage.getItem(ROSTER_STORAGE_KEY);
+        } catch {
+            setRosterStorageStatus('Impossible de lire le stockage du navigateur.', true);
+            return;
+        }
+
+        if (savedRoster === null) {
+            setRosterStorageStatus('Sauvegarde automatique activée dans ce navigateur.');
+            return;
+        }
+
+        let data;
+        try {
+            data = JSON.parse(savedRoster);
+        } catch {
+            setRosterStorageStatus('Les données enregistrées sont illisibles. Le roster initial est chargé.', true);
+            return;
+        }
+
+        if (!isValidStoredRoster(data)) {
+            setRosterStorageStatus('Les données enregistrées sont invalides. Le roster initial est chargé.', true);
+            return;
+        }
+
+        applyStoredRoster(data);
+        setRosterStorageStatus('Roster chargé depuis le stockage du navigateur.');
+    }
+
+    function saveRoster() {
+        try {
+            localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify({ players, currentMechId }));
+            setRosterStorageStatus('Modifications enregistrées dans ce navigateur.');
+        } catch {
+            setRosterStorageStatus('Erreur : impossible d’enregistrer le roster dans ce navigateur.', true);
+        }
+    }
+
+    // Affichage et gestion des joueurs et de leurs mechs.
     function renderPlayers() {
         const container = document.getElementById('playersContainer');
         container.innerHTML = '';
@@ -454,6 +582,9 @@
                     <button class="btn-remove btn-remove-mech" onclick="removeMech(${player.id}, ${mech.id})" aria-label="Retirer ${escapeHtml(mech.name)}" title="Retirer ce mech">&times;</button>
                     <input type="text" class="mech-name-input" value="${escapeHtml(mech.name)}"
                            onchange="updateMechName(${player.id}, ${mech.id}, this.value)" placeholder="Nom du Mech">
+                    <span class="mech-pv-label">PV</span>
+                    <input type="number" class="mech-pv-input" value="${mech.pv ?? 0}" min="0" step="1"
+                           onchange="updateMechPV(${player.id}, ${mech.id}, this.value)" aria-label="PV de ${escapeHtml(mech.name)}" title="Points de valeur">
                     <span class="mech-skill-display" id="display-skill-${mech.id}">Skill: ${mech.skill}</span>
                     <button class="btn-select" onclick="selectMech(${mech.id})">Tirer</button>
                 </div>
@@ -472,6 +603,7 @@
                 <div class="mech-list">
                     ${mechsHtml}
                 </div>
+                <div class="roster-pv-total" id="player-pv-total-${player.id}">Total : ${player.mechs.reduce((total, mech) => total + (mech.pv ?? 0), 0)} PV</div>
                 <button class="add-btn" onclick="addMech(${player.id})">+ Ajouter un Mech</button>
             `;
             container.appendChild(pDiv);
@@ -490,10 +622,12 @@
         })[character]);
     }
 
+    // Edition, ajout et suppression des joueurs et mechs.
     function updatePlayerName(playerId, newName) {
         const player = players.find(p => p.id === playerId);
         if (player) player.name = newName;
         updateCalculatorHeader();
+        saveRoster();
     }
 
     function updateMechName(playerId, mechId, newName) {
@@ -501,15 +635,31 @@
         const mech = player.mechs.find(m => m.id === mechId);
         if (mech) mech.name = newName;
         updateCalculatorHeader();
+        saveRoster();
+    }
+
+    function updateMechPV(playerId, mechId, newPV) {
+        const player = players.find(p => p.id === playerId);
+        const mech = player?.mechs.find(m => m.id === mechId);
+        if (!mech) return;
+
+        const pv = Number(newPV);
+        if (!Number.isFinite(pv) || pv < 0) return;
+
+        mech.pv = pv;
+        const total = player.mechs.reduce((sum, rosterMech) => sum + (rosterMech.pv ?? 0), 0);
+        document.getElementById(`player-pv-total-${playerId}`).textContent = `Total : ${total} PV`;
+        saveRoster();
     }
 
     function addPlayer() {
         players.push({
             id: nextPlayerId++,
             name: `Nouveau Joueur`,
-            mechs: [{ id: nextMechId++, name: "Nouveau Mech", skill: 4 }]
+            mechs: [{ id: nextMechId++, name: "Nouveau Mech", skill: 4, pv: 0 }]
         });
         renderPlayers();
+        saveRoster();
     }
 
     function removePlayer(playerId) {
@@ -532,23 +682,26 @@
             document.getElementById('skill').value = 4;
         }
         calculate();
+        saveRoster();
     }
 
     function addMech(playerId) {
         const player = players.find(p => p.id === playerId);
         if (player) {
-            player.mechs.push({ id: nextMechId++, name: "Nouveau Mech", skill: 4 });
+            player.mechs.push({ id: nextMechId++, name: "Nouveau Mech", skill: 4, pv: 0 });
             renderPlayers();
+            saveRoster();
         }
     }
 
+    // Export JSON d'un joueur.
     function exportPlayer(playerId) {
         const player = players.find(p => p.id === playerId);
         if (!player) return;
 
         const roster = {
             name: player.name,
-            mechs: player.mechs.map(mech => ({ name: mech.name, skill: mech.skill }))
+            mechs: player.mechs.map(mech => ({ name: mech.name, skill: mech.skill, pv: mech.pv ?? 0 }))
         };
         const file = new Blob([JSON.stringify(roster, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(file);
@@ -560,6 +713,50 @@
         setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 
+    // Import et export de la sauvegarde complete du roster.
+    function exportRosterDatabase() {
+        const file = new Blob([JSON.stringify({ players, currentMechId }, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'bdd.json';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    async function importRosterDatabase(file) {
+        if (!file) return;
+
+        let contents;
+        try {
+            contents = await file.text();
+        } catch {
+            alert('Impossible de lire le fichier sélectionné.');
+            return;
+        }
+
+        let data;
+        try {
+            data = JSON.parse(contents);
+        } catch {
+            alert('Le fichier sélectionné ne contient pas un JSON valide.');
+            return;
+        }
+
+        if (!isValidStoredRoster(data)) {
+            alert('Le fichier ne contient pas une sauvegarde bdd.json valide.');
+            return;
+        }
+
+        applyStoredRoster(data);
+        renderPlayers();
+        const selectedMech = findMechData(currentMechId);
+        document.getElementById('skill').value = selectedMech ? selectedMech.mech.skill : 4;
+        calculate();
+        saveRoster();
+    }
+
+    // Import JSON d'un joueur.
     async function importPlayerFromFile(file) {
         if (!file) return;
 
@@ -590,7 +787,8 @@
                 typeof mech === 'object' &&
                 typeof mech.name === 'string' &&
                 typeof mech.skill === 'number' &&
-                Number.isFinite(mech.skill)
+                Number.isFinite(mech.skill) &&
+                (mech.pv === undefined || (typeof mech.pv === 'number' && Number.isFinite(mech.pv) && mech.pv >= 0))
             )
         ) {
             alert('Le fichier doit contenir un joueur avec un nom et une liste de mechs valides.');
@@ -603,12 +801,15 @@
             mechs: roster.mechs.map(mech => ({
                 id: nextMechId++,
                 name: mech.name,
-                skill: mech.skill
+                skill: mech.skill,
+                pv: mech.pv ?? 0
             }))
         });
         renderPlayers();
+        saveRoster();
     }
 
+    // Gestion des mechs et selection du tireur.
     function removeMech(playerId, mechId) {
         const player = players.find(p => p.id === playerId);
         if (!player) return;
@@ -630,6 +831,7 @@
             document.getElementById('skill').value = selectedMech.mech.skill;
         }
         calculate();
+        saveRoster();
     }
 
     function findMechData(mechId) {
@@ -649,6 +851,7 @@
             document.getElementById('skill').value = data.mech.skill;
             calculate();
         }
+        saveRoster();
     }
 
     function updateCalculatorHeader() {
@@ -666,6 +869,7 @@
         }
     }
 
+    // Calculateur de tir.
     function calculate() {
         const skill = parseInt(document.getElementById('skill').value) || 0;
         const attackerMove = parseInt(document.getElementById('attackerMove').value) || 0;
@@ -680,6 +884,7 @@
             data.mech.skill = skill;
             const skillDisplay = document.getElementById(`display-skill-${currentMechId}`);
             if (skillDisplay) skillDisplay.innerText = `Skill: ${skill}`;
+            saveRoster();
         }
 
         const toHit = skill + attackerMove + targetTMM + targetMoveType + range + terrain + misc;
@@ -711,8 +916,13 @@
     }
 
     window.onload = function() {
+        loadRoster();
         renderPlayers();
-        selectMech(1);
+        const selectedMech = findMechData(currentMechId);
+        if (selectedMech) {
+            document.getElementById('skill').value = selectedMech.mech.skill;
+        }
+        calculate();
     };
 </script>
 
