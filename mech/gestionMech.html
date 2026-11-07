@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion du catalogue des mechs</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+            background: #1a1a24;
+            color: #e0e0e0;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        h1 { color: #ff6b00; }
+
+        .panel {
+            padding: 20px;
+            background: #2a2a35;
+            border: 1px solid #3f3f50;
+            border-radius: 8px;
+        }
+
+        .toolbar, .editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        button, select {
+            min-height: 38px;
+            padding: 8px 12px;
+            border: 1px solid #3f3f50;
+            border-radius: 4px;
+            background: #12121a;
+            color: #e0e0e0;
+            font: inherit;
+        }
+
+        button { cursor: pointer; }
+        button:hover { border-color: #ff6b00; }
+        button.primary { background: #4caf50; border-color: #4caf50; color: white; }
+        button.danger { background: #5a2929; }
+
+        select { flex: 1; min-width: 220px; }
+
+        textarea {
+            display: block;
+            width: 100%;
+            min-height: 58vh;
+            padding: 14px;
+            resize: vertical;
+            border: 1px solid #3f3f50;
+            border-radius: 4px;
+            background: #12121a;
+            color: #e0e0e0;
+            font: 14px/1.5 Consolas, "Courier New", monospace;
+            tab-size: 2;
+        }
+
+        #status { min-height: 1.5em; color: #b0b0c0; }
+        #status.error { color: #ff8a80; }
+        .hint { color: #b0b0c0; font-size: 0.9em; }
+
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .panel { padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestion du catalogue des mechs</h1>
+    <section class="panel" aria-label="Editeur du catalogue">
+        <div class="toolbar">
+            <button type="button" id="openButton">Ouvrir mech.json</button>
+            <button type="button" id="saveButton" class="primary">Enregistrer mech.json</button>
+            <button type="button" id="validateButton">Valider le JSON</button>
+            <input id="fileInput" type="file" accept=".json,application/json" hidden>
+        </div>
+        <div class="editor-toolbar">
+            <select id="mechSelect" aria-label="Mech à sélectionner">
+                <option value="">Aucun mech chargé</option>
+            </select>
+            <button type="button" id="addButton">Ajouter un mech</button>
+            <button type="button" id="removeButton" class="danger">Supprimer le mech sélectionné</button>
+        </div>
+        <p class="hint">Modifiez le JSON ci-dessous. L’enregistrement écrit dans le fichier ouvert si le navigateur le permet ; sinon, un fichier mech.json est téléchargé.</p>
+        <textarea id="jsonEditor" spellcheck="false" aria-label="Contenu JSON du catalogue" placeholder="Ouvrez mech.json ou collez son contenu ici."></textarea>
+        <p id="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <script>
+        const editor = document.getElementById('jsonEditor');
+        const mechSelect = document.getElementById('mechSelect');
+        const fileInput = document.getElementById('fileInput');
+        const status = document.getElementById('status');
+        let fileHandle = null;
+
+        function setStatus(message, isError = false) {
+            status.textContent = message;
+            status.classList.toggle('error', isError);
+        }
+
+        function parseCatalog() {
+            let catalog;
+            try {
+                catalog = JSON.parse(editor.value);
+            } catch (error) {
+                throw new Error(`JSON invalide : ${error.message}`);
+            }
+
+            if (!catalog || typeof catalog !== 'object' || Array.isArray(catalog) || !Array.isArray(catalog.mechs)) {
+                throw new Error('Le fichier doit contenir un objet avec une liste "mechs".');
+            }
+            if (!catalog.mechs.every(mech => mech && typeof mech === 'object' && !Array.isArray(mech) && typeof mech.name === 'string')) {
+                throw new Error('Chaque entrée de "mechs" doit être un objet avec un nom textuel.');
+            }
+            return catalog;
+        }
+
+        function refreshMechList(selectedIndex = 0) {
+            const catalog = parseCatalog();
+            mechSelect.replaceChildren();
+            catalog.mechs.forEach((mech, index) => {
+                const option = document.createElement('option');
+                option.value = String(index);
+                option.textContent = mech.name;
+                mechSelect.appendChild(option);
+            });
+            if (catalog.mechs.length) {
+                mechSelect.value = String(Math.min(selectedIndex, catalog.mechs.length - 1));
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Aucun mech dans le catalogue';
+                mechSelect.appendChild(option);
+            }
+        }
+
+        async function loadFile(file) {
+            if (!file) return;
+            editor.value = await file.text();
+            try {
+                refreshMechList();
+                setStatus(`${file.name} chargé. Vérifiez le contenu avant de l’enregistrer.`);
+            } catch (error) {
+                setStatus(error.message, true);
+            }
+        }
+
+        document.getElementById('openButton').addEventListener('click', async () => {
+            if (window.showOpenFilePicker) {
+                try {
+                    [fileHandle] = await window.showOpenFilePicker({
+                        multiple: false,
+                        types: [{ description: 'Fichier JSON', accept: { 'application/json': ['.json'] } }]
+                    });
+                    await loadFile(await fileHandle.getFile());
+                } catch (error) {
+                    if (error.name !== 'AbortError') setStatus(`Impossible d’ouvrir le fichier : ${error.message}`, true);
+                }
+            } else {
+                fileInput.click();
+            }
+        });
+
+        fileInput.addEventListener('change', async () => {
+            try {
+                await loadFile(fileInput.files[0]);
+                fileHandle = null;
+            } catch (error) {
+                setStatus(`Impossible de lire le fichier : ${error.message}`, true);
+            } finally {
+                fileInput.value = '';
+            }
+        });
+
+        document.getElementById('validateButton').addEventListener('click', () => {
+            try {
+                refreshMechList(Number(mechSelect.value) || 0);
+                setStatus(`JSON valide — ${parseCatalog().mechs.length} mech(s) dans le catalogue.`);
+            } catch (error) {
+                setStatus(error.message, true);
+            }
+        });
+
+        document.getElementById('addButton').addEventListener('click', () => {
+            try {
+                const catalog = parseCatalog();
+                catalog.mechs.push({
+                    name: 'Nouveau mech',
+                    classification: { unitType: '', subtype: '', role: '', techBase: '' },
+                    details: { tonnageTons: 0, introYear: 0, introEra: '', battleValue: 0 },
+                    alphaStrike: {
+                        pointValue: 0, size: 0, move: '', tmm: 0, armor: 0, structure: 0,
+                        damage: { short: 0, medium: 0, long: 0, extreme: 0 },
+                        abilities: []
+                    },
+                    art: { imageUrl: '', source: '', alphaStrikeCardUrl: '' },
+                    source: { name: '', url: '', retrievedOn: '' }
+                });
+                editor.value = JSON.stringify(catalog, null, 2);
+                refreshMechList(catalog.mechs.length - 1);
+                setStatus('Mech ajouté. Complétez ses informations puis enregistrez le fichier.');
+            } catch (error) {
+                setStatus(error.message, true);
+            }
+        });
+
+        document.getElementById('removeButton').addEventListener('click', () => {
+            try {
+                const catalog = parseCatalog();
+                const index = Number(mechSelect.value);
+                if (!Number.isInteger(index) || index < 0 || index >= catalog.mechs.length) {
+                    setStatus('Sélectionnez un mech à supprimer.', true);
+                    return;
+                }
+                catalog.mechs.splice(index, 1);
+                editor.value = JSON.stringify(catalog, null, 2);
+                refreshMechList(index);
+                setStatus('Mech supprimé. Enregistrez le fichier pour confirmer la modification.');
+            } catch (error) {
+                setStatus(error.message, true);
+            }
+        });
+
+        document.getElementById('saveButton').addEventListener('click', async () => {
+            let catalog;
+            try {
+                catalog = parseCatalog();
+            } catch (error) {
+                setStatus(error.message, true);
+                return;
+            }
+
+            const contents = `${JSON.stringify(catalog, null, 2)}\n`;
+            try {
+                if (fileHandle) {
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(contents);
+                    await writable.close();
+                    editor.value = contents;
+                    setStatus('Fichier mech.json enregistré.');
+                    return;
+                }
+                if (window.showSaveFilePicker) {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: 'mech.json',
+                        types: [{ description: 'Fichier JSON', accept: { 'application/json': ['.json'] } }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(contents);
+                    await writable.close();
+                    editor.value = contents;
+                    setStatus('Fichier mech.json enregistré.');
+                    return;
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                setStatus(`Impossible d’enregistrer le fichier : ${error.message}`, true);
+                return;
+            }
+
+            const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'mech.json';
+            link.click();
+            URL.revokeObjectURL(url);
+            editor.value = contents;
+            setStatus('Fichier mech.json téléchargé. Remplacez le fichier du catalogue par ce téléchargement.');
+        });
+
+        if (location.protocol !== 'file:') {
+            fetch('./mech.json')
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.text();
+                })
+                .then(contents => {
+                    editor.value = contents;
+                    refreshMechList();
+                    setStatus('Catalogue mech.json chargé.');
+                })
+                .catch(error => setStatus(`Chargement automatique impossible : ${error.message}. Ouvrez mech.json manuellement.`, true));
+        }
+    </script>
+</body>
+</html>
