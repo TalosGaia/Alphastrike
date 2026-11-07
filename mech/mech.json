@@ -1,0 +1,48 @@
+{
+  "mechs": [
+    {
+      "name": "Locust LCT-3D",
+      "classification": {
+        "unitType": "BattleMech",
+        "subtype": "Standard BattleMech",
+        "role": "Missile Boat",
+        "techBase": "Inner Sphere"
+      },
+      "details": {
+        "tonnageTons": 20,
+        "introYear": 3049,
+        "introEra": "Clan Invasion",
+        "battleValue": 436
+      },
+      "alphaStrike": {
+        "pointValue": 16,
+        "size": 1,
+        "move": "16\"",
+        "tmm": 3,
+        "armor": 1,
+        "structure": 2,
+        "damage": {
+          "short": "0*",
+          "medium": 1,
+          "long": 1,
+          "extreme": 0
+        },
+        "abilities": [
+          "CASE Cellular Ammunition Storage",
+          "IF 1 Indirect Fire",
+          "Missile Boat"
+        ]
+      },
+      "art": {
+        "imageUrl": "https://masterunitlist.battletech.com/units/Locust%20LCT-3D%20%C2%B7%20BattleTech_files/locust-b3fd22.webp",
+        "source": "Technical Readout: ilClan",
+        "alphaStrikeCardUrl": ""
+      },
+      "source": {
+        "name": "Master Unit List",
+        "url": "https://masterunitlist.battletech.com/units/locust-lct-3d",
+        "retrievedOn": "2026-11-07"
+      }
+    }
+  ]
+}
